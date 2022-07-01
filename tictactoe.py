@@ -4,13 +4,20 @@ Tic Tac Toe Player
 
 import enum
 import math
-
+import random
 import numpy as np
-
+import copy
 
 X = "X"
 O = "O"
 EMPTY = None
+
+
+def get_opposite_player(player):
+    if player == X:
+        return O
+    else:
+        return X
 
 
 def initial_state(): # returns the initial state of the board
@@ -21,8 +28,6 @@ def initial_state(): # returns the initial state of the board
             [EMPTY, EMPTY, EMPTY],
             [EMPTY, EMPTY, EMPTY]]
 
-
-
 def player(board):
     """
     Returns player who has the next turn on a board.
@@ -32,9 +37,11 @@ def player(board):
     for values in board:
         b.extend(values)
     print('player over')
-    if b.count(X) > b.count(O):
+    if b.count(X) > b.count(O): # if there are more Xs than Os
+        print(f"{O}'s turn") # then its O's turn
         return O
-    else:
+    else: # if there are more Os than Xs
+        print(f"{X}'s turn") # then its X's turn
         return X
 
 
@@ -42,32 +49,22 @@ def actions(board): # returns a list of all possible actions
     """
     Returns set of all possible actions (i, j) available on the board.
     """
-    options = []
-    for x_index, x in enumerate(board):
-        for y_index, y in enumerate(x):
-            if y == EMPTY:
-                options.append((x_index, y_index))
-    return set(options)
+    options = [] # create a list of all possible actions
+    for x_index, x in enumerate(board): # for each row
+        for y_index, y in enumerate(x): # for each element in the row
+            if y == EMPTY: # if the element is empty
+                options.append((x_index, y_index)) # add the action to the list
+    options.sort() # sort the list
+    return options # return the list
 
 
-def result(board, action, player): # returns the board that results from making action on board
+def result(board, action): # returns the board that results from making action on board
     """
     Returns the board that results from making move (i, j) on the board.
     """
-    brd = []
-    for value in board:
-        if value == action[0]: # if row now is same as action[0]
-            vlu = []
-            for val in value:
-                if val == action[1]:
-                    vlu.append(player)
-                else:
-                    vlu.append(val)
-            brd.append(vlu)
-        else:
-            brd.append(value)
-    return brd
-    
+    result = copy.deepcopy(board)
+    result[action[0]][action[1]] = player(board)
+    return result
 
     
 # when does X or O win?
@@ -104,12 +101,56 @@ def utility(board): # returns the utility of the board
             return -1
     return 0 # otherwise return 0 as the utility of the board
 
-def minimax(board): # returns the optimal action for the current player on the board
+
+
+def minimax(board):
     """
     Returns the optimal action for the current player on the board.
     """
-    return (1, 1)
+    if terminal(board):
+        return None
+    else:
+        if player(board) == X:
+            value, move = max_value(board)
+            return move
+        else:
+            value, move = min_value(board)
+            return move
 
+
+def max_value(board):
+    if terminal(board):
+        return utility(board), None
+
+    v = float('-inf')
+    move = None
+    for action in actions(board):
+        # v = max(v, min_value(result(board, action)))
+        aux, act = min_value(result(board, action))
+        if aux > v:
+            v = aux
+            move = action
+            if v == 1:
+                return v, move
+
+    return v, move
+
+
+def min_value(board):
+    if terminal(board):
+        return utility(board), None
+
+    v = float('inf')
+    move = None
+    for action in actions(board):
+        # v = max(v, min_value(result(board, action)))
+        aux, act = max_value(result(board, action))
+        if aux < v:
+            v = aux
+            move = action
+            if v == -1:
+                return v, move
+    return v, move
 
 def terminal(board): # returns true if the game is over
     """
