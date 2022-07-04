@@ -2,10 +2,7 @@
 Tic Tac Toe Player
 """
 
-import enum
 import math
-import random
-import numpy as np
 import copy
 
 X = "X"
@@ -13,14 +10,7 @@ O = "O"
 EMPTY = None
 
 
-def get_opposite_player(player):
-    if player == X:
-        return O
-    else:
-        return X
-
-
-def initial_state(): # returns the initial state of the board
+def initial_state():
     """
     Returns starting state of the board.
     """
@@ -28,145 +18,153 @@ def initial_state(): # returns the initial state of the board
             [EMPTY, EMPTY, EMPTY],
             [EMPTY, EMPTY, EMPTY]]
 
+
 def player(board):
     """
     Returns player who has the next turn on a board.
     """
-    print("running player")
-    b = []
-    for values in board:
-        b.extend(values)
-    print('player over')
-    if b.count(X) > b.count(O): # if there are more Xs than Os
-        print(f"{O}'s turn") # then its O's turn
-        return O
-    else: # if there are more Os than Xs
-        print(f"{X}'s turn") # then its X's turn
-        return X
+    x_init = 0 # Counter for Xs
+    o_init = 0 # Counter for Os
+
+    for i in range(0, len(board)): # Check rows
+        for j in range(0, len(board[0])):
+            if board[i][j] == X: # If there is an X, increase the counter
+                x_init += 1
+            elif board[i][j] == O: # If there is an O, increase the counter
+                o_init += 1
+    # If there are more Xs than Os, O is the player
+    if x_init > o_init: # X has more Xs
+        return O # O is the player
+    else: # O has more Os
+        return X # X is the player
 
 
-def actions(board): # returns a list of all possible actions
+def actions(board):
     """
     Returns set of all possible actions (i, j) available on the board.
     """
-    options = [] # create a list of all possible actions
-    for x_index, x in enumerate(board): # for each row
-        for y_index, y in enumerate(x): # for each element in the row
-            if y == EMPTY: # if the element is empty
-                options.append((x_index, y_index)) # add the action to the list
-    options.sort() # sort the list
-    return options # return the list
+    possibleActions = set()
+
+    for i in range(0, len(board)):
+        for j in range(0, len(board[0])):
+            if board[i][j] == EMPTY:
+                possibleActions.add((i, j))
+    return possibleActions
 
 
-def result(board, action): # returns the board that results from making action on board
+def result(board, action):
     """
     Returns the board that results from making move (i, j) on the board.
     """
+    # Create new board, without modifying the original board received as input
     result = copy.deepcopy(board)
-    result[action[0]][action[1]] = player(board)
+    result[action[0]][action[1]] = player(board) # Set the player's move on the board
     return result
 
-    
-# when does X or O win?
-# X or O wins when there is a row, column, or diagonal of 3 of the same symbol
 
-# how to determine if X or O wins?
-# write a function function that determine if there is a row, column, or diagonal of 3 of the same symbol
+def winner(board):
+    """
+    Returns the winner of the game, if there is one.
+    """
+    # Check rows
+    if all(i == board[0][0] for i in board[0]): # Check if all the elements in the first row are the same
+        return board[0][0] # Return the element
+    elif all(i == board[1][0] for i in board[1]): # Check if all the elements in the second row are the same
+        return board[1][0] # Return the element
+    elif all(i == board[2][0] for i in board[2]): # Check if all the elements in the third row are the same
+        return board[2][0] # Return the element
+    # Check columns
+    elif board[0][0] == board[1][0] and board[1][0] == board[2][0]: # Check if the first column is the same
+        return board[0][0] # Return the element
+    elif board[0][1] == board[1][1] and board[1][1] == board[2][1]: # Check if the second column is the same
+        return board[0][1] # Return the element
+    elif board[0][2] == board[1][2] and board[1][2] == board[2][2]: # Check if the third column is the same
+        return board[0][2] # Return the element
+    # Check diagonals
+    elif board[0][0] == board[1][1] and board[1][1] == board[2][2]: # Check if the first diagonal is the same
+        return board[0][0] # Return the element
+    elif board[0][2] == board[1][1] and board[1][1] == board[2][0]: # Check if the second diagonal is the same
+        return board[0][2] # Return the element
+    else: # If there is no winner, return None
+        return None # Return None
 
-def utility(board): # returns the utility of the board
+
+def terminal(board):
+    """
+    Returns True if game is over, False otherwise.
+    """
+
+    if winner(board) is not None or (not any(EMPTY in sublist for sublist in board) and winner(board) is None): # If there is a winner or if there are no empty spaces left
+        return True
+    else:
+        return False # If there is no winner and there are empty spaces left, return False
+
+
+def utility(board):
     """
     Returns 1 if X has won the game, -1 if O has won, 0 otherwise.
     """
-    # get all the rows and columns of board
-    matrix = np.array(board)
-    rows = []
-    columns = []
-    for row in board:
-        rows.append(row)
-    for index in range(3):
-        # print(index)
-        cols = []
-        for row in rows:
-            cols.append(row[index])
-        columns.append(cols)
-    # get diagonals from rows and columns of 3x3 list
-    diags = [matrix[::-1,:].diagonal(i) for i in range(-3,4)]
-    diags.extend(matrix.diagonal(i) for i in range(3,-4,-1))
-    diagonals = [n.tolist() for n in diags]
-    totals = rows + columns + diagonals
-    for line in totals:
-        if line.count(X) == 3: # if there are 3 Xs in a row
+    if terminal(board): # If the board is terminal, return the utility of the board
+        if winner(board) == X: # X is the player
             return 1
-        elif line.count(O) == 3: # if there are 3 Os in a row
+        elif winner(board) == O: # O is the player
             return -1
-    return 0 # otherwise return 0 as the utility of the board
-
+        else:
+            return 0
+    # Check how to handle exception when a non terminal board is received.
 
 
 def minimax(board):
     """
     Returns the optimal action for the current player on the board.
     """
-    if terminal(board):
+    if terminal(board): # If the board is terminal, return the utility of the board
         return None
     else:
-        if player(board) == X:
+        if player(board) == X: # X is the player
             value, move = max_value(board)
             return move
-        else:
+        else: # O is the player
             value, move = min_value(board)
             return move
 
 
 def max_value(board):
+    '''
+    Returns the maximum value of the board and the action that leads to it.
+    '''
     if terminal(board):
         return utility(board), None
 
     v = float('-inf')
     move = None
-    for action in actions(board):
-        # v = max(v, min_value(result(board, action)))
-        aux, act = min_value(result(board, action))
-        if aux > v:
-            v = aux
-            move = action
-            if v == 1:
-                return v, move
+    for action in actions(board): # For each action, get the minimum value of the resulting board
+        aux, act = min_value(result(board, action)) # Get the minimum value of the resulting board
+        if aux > v: # If the minimum value is greater than the current maximum value, update the maximum value and the action
+            v = aux # Update the maximum value
+            move = action # Update the action
+            if v == 1: # If the maximum value is 1, return the maximum value and the action
+                return v, move # Return the maximum value and the action
 
-    return v, move
+    return v, move # Return the maximum value and the action
 
 
-def min_value(board):
-    if terminal(board):
-        return utility(board), None
+def min_value(board): # Same as max_value, but for the minimum value
+    '''
+    Returns the minimum value of the board and the action that leads to it.
+    '''
+    if terminal(board): # If the board is terminal, return the utility of the board
+        return utility(board), None # Return the utility of the board
 
     v = float('inf')
     move = None
-    for action in actions(board):
-        # v = max(v, min_value(result(board, action)))
+    for action in actions(board): # For each action, get the maximum value of the resulting board
         aux, act = max_value(result(board, action))
-        if aux < v:
-            v = aux
-            move = action
-            if v == -1:
-                return v, move
-    return v, move
+        if aux < v: # If the maximum value is less than the current minimum value, update the minimum value and the action
+            v = aux # Update the minimum value
+            move = action # Update the action
+            if v == -1: # If the minimum value is -1, return the minimum value and the action
+                return v, move # Return the minimum value and the action
 
-def terminal(board): # returns true if the game is over
-    """
-    Returns True if game is over, False otherwise.
-    """
-    value = utility(board)
-    if value == 1 or value == -1:
-        return True
-
-
-def winner(board): # returns the winner of the game, or None if there is no winner
-    """
-    Returns the winner of the game, if there is one.
-    """
-    value = utility(board)
-    if value == 1:
-        return X
-    elif value == -1:
-        return O
+    return v, move # Return the minimum value and the action
+    
